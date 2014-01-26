@@ -4,6 +4,7 @@ import com.naphaso.cbor.exception.CborTypeException;
 import com.naphaso.cbor.io.Input;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 
 /**
  * Created by wolong on 1/12/14.
@@ -281,7 +282,7 @@ public class CborReader {
                 } else break;
             } else if(state == ScannerTypeState.STRING_DATA) {
                 if(input.hasBytes(currentNumberLength)) {
-                    onString(new String(input.getBytes(currentNumberLength)));
+                    onString(new String(input.getBytes(currentNumberLength),Charset.forName("UTF-8")));
                     state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.ARRAY) {
