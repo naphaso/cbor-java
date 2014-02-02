@@ -1,18 +1,21 @@
 package com.naphaso.cbor;
 
+import com.naphaso.cbor.exception.CborException;
 import com.naphaso.cbor.exception.CborTypeException;
 import com.naphaso.cbor.io.Input;
+import com.naphaso.cbor.type.*;
 
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 
 /**
  * Created by wolong on 1/12/14.
  */
 public class CborReader {
+    private final static Charset stringCharset = Charset.forName("UTF-8");
+
     private final Input input;
-
-
 
     private static enum ScannerTypeState {
         TYPE,
@@ -28,17 +31,17 @@ public class CborReader {
         SPECIAL
     }
 
-    private int currentNumberLength;
+    private int currentSize;
 
     private ScannerTypeState state = ScannerTypeState.TYPE;
+    private CborListener listener;
 
     public CborReader(Input input) {
         this.input = input;
     }
 
-    private void process() {
-        byte type = 123;
-
+    public void setListener(CborListener listener) {
+        this.listener = listener;
     }
 
     public void run() throws IOException {
@@ -49,379 +52,280 @@ public class CborReader {
 
                     int majorType = (type & 0xff) >> 5;
                     int minorType = type & 31;
-                    //System.out.println("[DEBUG] major  " + majorType + ", minor " + minorType);
+
                     switch(majorType) {
                         case 0: // positive integer
                             if(minorType < 24) {
-                                onInteger(minorType);
+                                listener.onNumber(new CborShort(minorType));
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.PINT;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.PINT;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.PINT;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.PINT;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                         case 1: // negative integer
                             if(minorType < 24) {
-                                onInteger(minorType);
+                                listener.onNumber(new CborShort(-minorType));
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.NINT;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.NINT;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.NINT;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.NINT;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                         case 2: // bytes
                             if(minorType < 24) {
                                 state = ScannerTypeState.BYTES_DATA;
-                                currentNumberLength = minorType;
+                                currentSize = minorType;
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.BYTES_SIZE;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.BYTES_SIZE;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.BYTES_SIZE;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.BYTES_SIZE;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                         case 3: // string
                             if(minorType < 24) {
                                 state = ScannerTypeState.STRING_DATA;
-                                currentNumberLength = minorType;
+                                currentSize = minorType;
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.STRING_SIZE;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.STRING_SIZE;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.STRING_SIZE;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.STRING_SIZE;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                         case 4: // array
                             if(minorType < 24) {
-                                onArray(minorType);
+                                listener.onArray(new CborShort(minorType));
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.ARRAY;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.ARRAY;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.ARRAY;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.ARRAY;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                         case 5: // map
                             if(minorType < 24) {
-                                onMap(minorType);
+                                listener.onMap(new CborShort(minorType));
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.MAP;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.MAP;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.MAP;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.MAP;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                         case 6: // tag
                             if(minorType < 24) {
-                                onTag(minorType);
+                                listener.onTag(new CborShort(minorType));
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.TAG;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.TAG;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.TAG;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.TAG;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                         case 7: // special
                             if(minorType < 24) {
-                                onSpecial(minorType);
+                                listener.onSpecial(new CborShort(minorType));
                             } else if(minorType == 24) {
                                 state = ScannerTypeState.SPECIAL;
-                                currentNumberLength = 1;
+                                currentSize = 1;
                             } else if(minorType == 25) {
                                 state = ScannerTypeState.SPECIAL;
-                                currentNumberLength = 2;
+                                currentSize = 2;
                             } else if(minorType == 26) {
                                 state = ScannerTypeState.SPECIAL;
-                                currentNumberLength = 4;
+                                currentSize = 4;
                             } else if(minorType == 27) {
                                 state = ScannerTypeState.SPECIAL;
-                                currentNumberLength = 8;
+                                currentSize = 8;
                             } else throw new CborTypeException("invalid type");
                             break;
                     }
                 } else break;
             } else if(state == ScannerTypeState.PINT) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            onInteger(input.getByte() & 0xff);
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 2:
-                            onInteger(((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff));
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 4:
-                            parsePositiveInt32();
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            onInteger(123); // TODO: implement it
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    listener.onNumber(parsePositive(currentSize));
+                    state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.NINT) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            onInteger(-(input.getByte() & 0xff));
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 2:
-                            onInteger(-(((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff)));
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 4:
-                            parseNegativeInt32();
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            onInteger(-123); // TODO: implement it
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    listener.onNumber(parseNegative(currentSize));
+                    state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.BYTES_SIZE) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            currentNumberLength = input.getByte() & 0xff;
-                            state = ScannerTypeState.BYTES_DATA;
-                            break;
-                        case 2:
-                            currentNumberLength = ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
-                            state = ScannerTypeState.BYTES_DATA;
-                            break;
-                        case 4:
-                            // TODO: implement large bytes
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            // TODO: implement very large bytes
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    currentSize = parsePositive(currentSize).intValue();
+                    state = ScannerTypeState.BYTES_DATA;
                 } else break;
             } else if(state == ScannerTypeState.BYTES_DATA) {
-                if(input.hasBytes(currentNumberLength)) {
-                    onBytes(input.getBytes(currentNumberLength));
+                if(input.hasBytes(currentSize)) {
+                    listener.onBytes(input.getBytes(currentSize));
                     state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.STRING_SIZE) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            currentNumberLength = input.getByte() & 0xff;
-                            state = ScannerTypeState.STRING_DATA;
-                            break;
-                        case 2:
-                            currentNumberLength = ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
-                            state = ScannerTypeState.STRING_DATA;
-                            break;
-                        case 4:
-                            // TODO: implement large strings
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            // TODO: implement very strings
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    currentSize = parsePositive(currentSize).intValue();
+                    state = ScannerTypeState.STRING_DATA;
                 } else break;
             } else if(state == ScannerTypeState.STRING_DATA) {
-                if(input.hasBytes(currentNumberLength)) {
-                    onString(new String(input.getBytes(currentNumberLength),Charset.forName("UTF-8")));
+                if(input.hasBytes(currentSize)) {
+                    listener.onString(new String(input.getBytes(currentSize), stringCharset));
                     state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.ARRAY) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            onArray(input.getByte() & 0xff);
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 2:
-                            onArray(((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff));
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 4:
-                            onArray(123); // TODO: implement it
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            onArray(123); // TODO: implement it
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    listener.onArray(parsePositive(currentSize));
+                    state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.MAP) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            onMap(input.getByte() & 0xff);
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 2:
-                            onMap(((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff));
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 4:
-                            onMap(123); // TODO: implement large maps
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            onMap(123); // TODO: implement very large maps
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    listener.onMap(parsePositive(currentSize));
+                    state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.TAG) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            onTag(input.getByte() & 0xff);
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 2:
-                            onTag(((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff));
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 4:
-                            onTag(123); // TODO: implement large tags
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            onTag(123); // TODO: implement very large tags
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    listener.onTag(parsePositive(currentSize));
+                    state = ScannerTypeState.TYPE;
                 } else break;
             } else if(state == ScannerTypeState.SPECIAL) {
-                if(input.hasBytes(currentNumberLength)) {
-                    switch (currentNumberLength) {
-                        case 1:
-                            onSpecial(input.getByte() & 0xff);
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 2:
-                            onSpecial(((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff));
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 4:
-                            onSpecial(123); // TODO: implement large maps
-                            state = ScannerTypeState.TYPE;
-                            break;
-                        case 8:
-                            onSpecial(123); // TODO: implement very large maps
-                            state = ScannerTypeState.TYPE;
-                            break;
-                    }
+                if(input.hasBytes(currentSize)) {
+                    listener.onSpecial(parsePositive(currentSize));
+                    state = ScannerTypeState.TYPE;
                 } else break;
             }
         }
     }
 
-
-
-    private void parsePositiveInt32() throws IOException {
-        final int value = ((input.getByte() & 0xff) << 24) | ((input.getByte() & 0xff) << 16) | ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
-        if(value < 0) {
-            onLong(value & 0xffffffffl);
-        } else {
-            onInteger(value);
+    private CborNumber parsePositive(int size) throws IOException {
+        switch (size) {
+            case 1:
+                return parsePositiveInt8();
+            case 2:
+                return parsePositiveInt16();
+            case 4:
+                return parsePositiveInt32();
+            case 8:
+                return parsePositiveInt64();
         }
+
+        throw new CborException("unknown number size: " + size);
     }
 
-    private void parseNegativeInt32() throws IOException {
-        final int value = ((input.getByte() & 0xff) << 24) | ((input.getByte() & 0xff) << 16) | ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
-        if(value < 0) {
-            onLong(-(value & 0xffffffffl));
-        } else {
-            onInteger(-value);
+    private CborNumber parseNegative(int size) throws IOException {
+        switch (size) {
+            case 1:
+                return parserNegativeInt8();
+            case 2:
+                return parseNegativeInt16();
+            case 4:
+                return parseNegativeInt32();
+            case 8:
+                return parseNegativeInt64();
         }
+
+        throw new CborException("unknown number size: " + size);
     }
 
-    private void onLong(long l) {
-        System.out.println("long: " + l);
+    private CborNumber parsePositiveInt8() throws IOException {
+        final int value = input.getByte() & 0xff;
+        return new CborShort(value);
     }
 
-    private void onSpecial(int minorType) {
-        System.out.println("special: " + minorType);
+    private CborNumber parserNegativeInt8() throws IOException {
+        final int value = input.getByte() & 0xff;
+        return new CborShort(-value);
     }
 
-    private void onTag(int minorType) {
-        System.out.println("tag: " + minorType);
+    private CborNumber parsePositiveInt16() throws IOException {
+        final int value = ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
+        return new CborShort(value);
     }
 
-    private void onMap(int minorType) {
-        System.out.println("map: " + minorType);
+    private CborNumber parseNegativeInt16() throws IOException {
+        final int value = ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
+        return new CborShort(-value);
     }
 
-    private void onBytes(byte[] bytes) {
-        System.out.println("bytes...");
+    private CborNumber parsePositiveInt32() throws IOException {
+        final int value = ((input.getByte() & 0xff) << 24) | ((input.getByte() & 0xff) << 16) | ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
+        return value < 0 ? new CborInteger(value & 0xffffffffL) : new CborShort(value);
     }
 
-    private void onString(String s) {
-        System.out.println("string: " + s);
+    private CborNumber parseNegativeInt32() throws IOException {
+        final int value = ((input.getByte() & 0xff) << 24) | ((input.getByte() & 0xff) << 16) | ((input.getByte() & 0xff) << 8) | (input.getByte() & 0xff);
+        return value < 0 ? new CborInteger(-(value & 0xffffffffL)) : new CborShort(-value);
     }
 
-    public void onInteger(int value) {
-        System.out.println("integer: " + value);
+    private CborNumber parsePositiveInt64() throws IOException {
+        BigInteger value = BigInteger.ZERO;
+        for(int i = 0; i < 8; i++) {
+            value = value.shiftLeft(8).or(BigInteger.valueOf(input.getByte() & 0xff));
+        }
+
+        return new CborBigInteger(value);
     }
 
-    public void onArray(int length) {
-        System.out.println("array: " + length);
+    private CborNumber parseNegativeInt64() throws IOException {
+        BigInteger value = BigInteger.ZERO;
+        for(int i = 0; i < 8; i++) {
+            value = value.shiftLeft(8).or(BigInteger.valueOf(input.getByte() & 0xff));
+        }
+
+        return new CborBigInteger(value.negate());
     }
+
+
+
 }

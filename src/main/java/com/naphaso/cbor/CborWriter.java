@@ -1,9 +1,15 @@
 package com.naphaso.cbor;
 
+import com.naphaso.cbor.exception.CborException;
 import com.naphaso.cbor.io.Output;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.math.BigInteger;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by wolong on 1/12/14.
@@ -96,13 +102,18 @@ public class CborWriter {
             output.write(value.shiftRight(8).and(mask).intValue());
             output.write(value.and(mask).intValue());
         } else {
-            /*
-            if (majorType == MAJOR_TYPE_NEGATIVE_INTEGER) {
-                writeTypeAndValue(MAJOR_TYPE_TAG, 3);
+            if (majorType == 0) { // negative
+                writeTypeAndValue(6, 3);
+            } else if(majorType == 1) {
+                writeTypeAndValue(6, 4);
+            } else throw new CborException("unknown bignumber major type");
+
+            byte[] data = value.toByteArray();
+            if(data[0] == 0) {
+                writeBytes(data, 1, data.length - 1);
             } else {
-                writeTypeAndValue(MAJOR_TYPE_TAG, 4);
-            }*/
-            //encoder.encode(new ByteString(length.toByteArray()));
+                writeBytes(data);
+            }
         }
     }
 
@@ -133,6 +144,11 @@ public class CborWriter {
     }
 
     // bytes
+
+    public void writeBytes(byte[] bytes, int offset, int length) throws IOException {
+        writeTypeAndValue(2, length);
+        output.write(bytes, offset, length);
+    }
 
     public void writeBytes(byte[] bytes) throws IOException {
         writeTypeAndValue(2, bytes.length);
@@ -201,5 +217,45 @@ public class CborWriter {
 
     public void writeSpecial(BigInteger code) throws IOException {
         writeTypeAndValue(6, code);
+    }
+
+    public void write(Object object) throws IOException {
+        if(object == null) {
+            writeSpecial(22);
+        } if(object instanceof Integer) {
+            writeInt((Integer) object);
+        } else if(object instanceof Long) {
+            writeInt((Long) object);
+        } else if(object instanceof String) {
+            writeString((String) object);
+        } else if(object instanceof byte[]) {
+            writeBytes((byte[]) object);
+        } else if(object instanceof BigInteger) {
+            writeInt((BigInteger) object);
+        } else if(object.getClass().isArray()) {
+            int length = Array.getLength(object);
+            writeArray(length);
+            for(int i = 0; i < length; i++) {
+                Object element = Array.get(object, i);
+                write(element);
+            }
+        } else if(object instanceof List) {
+            final List list = (List) object;
+            writeArray(list.size());
+            for(Object element : list) {
+                write(element);
+            }
+        } else if(object instanceof Map) {
+            final Map map = (Map) object;
+            writeMap(map.size());
+            for(Map.Entry entry : (Set<Map.Entry>) map.entrySet()) {
+                write(entry.getKey());
+                write(entry.getValue());
+            }
+        } else if(object instanceof Boolean) {
+            writeSpecial((Boolean) object ? 21 : 20);
+        }
+
+
     }
 }

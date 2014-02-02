@@ -3,12 +3,12 @@ package com.naphaso.cbor.type;
 import java.math.BigInteger;
 
 /**
- * Created by wolong on 1/12/14.
+ * Created by wolong on 02/02/14.
  */
-public class CborInteger implements CborNumber {
-    private long value;
+public class CborShort implements CborNumber {
+    private final int value;
 
-    public CborInteger(long value) {
+    public CborShort(int value) {
         this.value = value;
     }
 
@@ -32,11 +32,7 @@ public class CborInteger implements CborNumber {
 
     @Override
     public int intValue() {
-        if(value >= Integer.MIN_VALUE && value <= Integer.MAX_VALUE) {
-            return (int) value;
-        } else {
-            throw new NumberFormatException("Value is out of range : " + value);
-        }
+        return value;
     }
 
     @Override
@@ -46,16 +42,12 @@ public class CborInteger implements CborNumber {
 
     @Override
     public float floatValue() {
-        if(value >= Float.MIN_VALUE && value <= Float.MAX_VALUE) {
-            return (float) value;
-        } else {
-            throw new NumberFormatException("Value is out of range : " + value);
-        }
+        return value;
     }
 
     @Override
     public double doubleValue() {
-        return (double) value;
+        return value;
     }
 
     @Override
@@ -65,6 +57,6 @@ public class CborInteger implements CborNumber {
 
     @Override
     public String toString() {
-        return Long.toString(value);
+        return Integer.toString(value);
     }
 }
