@@ -16,15 +16,41 @@
 // limitations under the License.
 //
 
-package com.naphaso.cbor.exception;
+package com.naphaso.cbor.test;
 
-public class CborTypeOverflowException extends CborTypeException {
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
-    public CborTypeOverflowException(String message) {
-        super(message);
+/**
+ * Unit test for simple App.
+ */
+public class AppTest 
+    extends TestCase
+{
+    /**
+     * Create the test case
+     *
+     * @param testName name of the test case
+     */
+    public AppTest( String testName )
+    {
+        super( testName );
     }
 
-    public CborTypeOverflowException(String message, Throwable cause) {
-        super(message, cause);
+    /**
+     * @return the suite of tests being tested
+     */
+    public static Test suite()
+    {
+        return new TestSuite( AppTest.class );
+    }
+
+    /**
+     * Rigourous Test :-)
+     */
+    public void testApp()
+    {
+        assertTrue( true );
     }
 }
