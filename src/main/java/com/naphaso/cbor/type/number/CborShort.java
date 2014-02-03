@@ -1,15 +1,26 @@
-package com.naphaso.cbor.type;
+package com.naphaso.cbor.type.number;
 
+import com.naphaso.cbor.CborWriter;
+import com.naphaso.cbor.type.CborNumber;
+
+import java.io.IOException;
 import java.math.BigInteger;
 
 /**
  * Created by wolong on 02/02/14.
  */
-public class CborShort implements CborNumber {
+public class CborShort extends CborNumber {
     private final int value;
 
     public CborShort(int value) {
         this.value = value;
+    }
+
+    @Override
+    public void write(CborWriter writer) throws IOException {
+        super.write(writer);
+
+        writer.writeInt(value);
     }
 
     @Override
@@ -56,7 +67,12 @@ public class CborShort implements CborNumber {
     }
 
     @Override
+    public boolean equals(int value) {
+        return this.value == value;
+    }
+
+    @Override
     public String toString() {
-        return Integer.toString(value);
+        return toStringWithTag(Integer.toString(value));
     }
 }

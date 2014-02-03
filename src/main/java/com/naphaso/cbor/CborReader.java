@@ -4,6 +4,9 @@ import com.naphaso.cbor.exception.CborException;
 import com.naphaso.cbor.exception.CborTypeException;
 import com.naphaso.cbor.io.Input;
 import com.naphaso.cbor.type.*;
+import com.naphaso.cbor.type.number.CborBigInteger;
+import com.naphaso.cbor.type.number.CborInteger;
+import com.naphaso.cbor.type.number.CborShort;
 
 import java.io.IOException;
 import java.math.BigInteger;

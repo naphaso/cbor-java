@@ -4,6 +4,11 @@ import com.naphaso.cbor.io.Input;
 import com.naphaso.cbor.io.Output;
 import com.naphaso.cbor.io.StreamInput;
 import com.naphaso.cbor.io.StreamOutput;
+import com.naphaso.cbor.type.CborMap;
+import com.naphaso.cbor.type.CborNumber;
+import com.naphaso.cbor.type.CborObject;
+import com.naphaso.cbor.type.CborString;
+import com.naphaso.cbor.type.number.CborShort;
 
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -65,9 +70,46 @@ public class App
         reader.run();
     }
 
+    public void test2() throws IOException {
+        CborObject a = new CborShort(123);
+        CborObject b = new CborString("hello");
+
+        HashMap<CborObject, CborObject> m = new HashMap<CborObject, CborObject>();
+        m.put(b, a);
+
+        CborMap map = new CborMap(m);
+        map.setTag(new CborShort(123));
+
+        System.out.println(map);
+
+        FileOutputStream fos = new FileOutputStream("test.cbor");
+        Output output = new StreamOutput(fos);
+        CborWriter writer = new CborWriter(output);
+        map.write(writer);
+        output.close();
+
+
+        // read
+        FileInputStream fis = new FileInputStream("test.cbor");
+        Input input = new StreamInput(fis);
+        CborReader reader = new CborReader(input);
+        CborDebugListener listener = new CborDebugListener();
+        reader.setListener(listener);
+        reader.run();
+
+        // parse
+        fis.close();
+        fis = new FileInputStream("test.cbor");
+        input = new StreamInput(fis);
+        CborParser parser = new CborParser();
+        parser.parse(input);
+    }
+
 
     public static void main( String[] args ) throws IOException {
-        new App().testWrite2();
-        new App().testRead();
+        //new App().testWrite2();
+        //new App().testRead();
+
+        new App().test2();
     }
 }
