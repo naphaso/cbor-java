@@ -18,10 +18,9 @@
 
 package com.naphaso.cbor;
 
-import com.naphaso.cbor.io.Input;
-import com.naphaso.cbor.io.Output;
-import com.naphaso.cbor.io.StreamInput;
-import com.naphaso.cbor.io.StreamOutput;
+import com.naphaso.cbor.io.*;
+import com.naphaso.cbor.serializers.Serializer;
+import com.naphaso.cbor.serializers.SerializerFactory;
 import com.naphaso.cbor.type.CborMap;
 import com.naphaso.cbor.type.CborObject;
 import com.naphaso.cbor.type.CborString;
@@ -30,12 +29,14 @@ import com.naphaso.cbor.type.number.CborShort;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Type;
 import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 
-public class App 
-{
+public class App {
+
+
     public void testWrite() throws IOException {
         FileOutputStream fos = new FileOutputStream("test.cbor");
         Output output = new StreamOutput(fos);
@@ -118,11 +119,52 @@ public class App
         parser.parse(input);
     }
 
+    public HashMap<String, String> someMap;
 
-    public static void main( String[] args ) throws IOException {
+    public void testSerializers() throws Exception {
+        someMap = new HashMap<String, String>();
+        someMap.put("hello", "world");
+        someMap.put("one", "two");
+
+        Type someMapType = getClass().getField("someMap").getGenericType();
+
+        CborWriter writer = new CborWriter(new DummyOutput());
+
+        for(int i = 0; i < 10000000; i++) {
+            Serializer serializer = SerializerFactory.getInstance().getSerializer(someMapType);
+            CborObject obj = serializer.write(someMap);
+            obj.write(writer);
+        }
+
+        System.gc();
+        System.gc();
+        System.gc();
+        System.gc();
+        System.gc();
+        System.gc();
+        System.gc();
+        System.gc();
+
+
+        long t1 = System.currentTimeMillis();
+        for(int i = 0; i < 10000000; i++) {
+            Serializer serializer = SerializerFactory.getInstance().getSerializer(someMapType);
+            CborObject obj = serializer.write(someMap);
+            obj.write(writer);
+        }
+        long t2 = System.currentTimeMillis();
+
+        System.out.println("time: " + (double)(t2 - t1)/1000);
+
+        //Object o = obj.toObject();
+
+        //System.out.println(o);
+    }
+
+    public static void main( String[] args ) throws Exception {
         //new App().testWrite2();
         //new App().testRead();
 
-        new App().test2();
+        new App().testSerializers();
     }
 }

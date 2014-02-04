@@ -57,4 +57,9 @@ public class CborString extends CborObject {
     public String toString() {
         return toStringWithTag("\"" + value + "\"");
     }
+
+    @Override
+    public Object toObject() {
+        return value;
+    }
 }

@@ -43,4 +43,9 @@ public class CborUndefined extends CborSpecial {
     public String toString() {
         return toStringWithTag("undefined");
     }
+
+    @Override
+    public Object toObject() {
+        return null;
+    }
 }

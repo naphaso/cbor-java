@@ -90,4 +90,9 @@ public class CborShort extends CborNumber {
     public String toString() {
         return toStringWithTag(Integer.toString(value));
     }
+
+    @Override
+    public Object toObject() {
+        return value;
+    }
 }

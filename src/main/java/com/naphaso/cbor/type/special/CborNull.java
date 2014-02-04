@@ -40,4 +40,9 @@ public class CborNull extends CborSpecial {
     public String toString() {
         return toStringWithTag("null");
     }
+
+    @Override
+    public Object toObject() {
+        return null;
+    }
 }

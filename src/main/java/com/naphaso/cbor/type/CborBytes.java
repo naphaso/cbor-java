@@ -71,4 +71,9 @@ public class CborBytes extends CborObject {
         }
         return new String(out);
     }
+
+    @Override
+    public Object toObject() {
+        return value;
+    }
 }

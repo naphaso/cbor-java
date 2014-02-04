@@ -79,4 +79,9 @@ public class CborArray extends CborObject {
 
         return toStringWithTag(builder.toString());
     }
+
+    @Override
+    public Object toObject() {
+        return value;
+    }
 }

@@ -82,4 +82,9 @@ public class CborBigInteger extends CborNumber {
     public String toString() {
         return toStringWithTag(value.toString());
     }
+
+    @Override
+    public Object toObject() {
+        return value;
+    }
 }

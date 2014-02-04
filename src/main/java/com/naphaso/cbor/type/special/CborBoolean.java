@@ -57,4 +57,9 @@ public class CborBoolean extends CborSpecial {
     public String toString() {
         return toStringWithTag(value ? "true" : "false");
     }
+
+    @Override
+    public Object toObject() {
+        return value;
+    }
 }

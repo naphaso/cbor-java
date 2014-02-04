@@ -83,4 +83,15 @@ public class CborMap extends CborObject {
 
         return toStringWithTag(builder.toString());
     }
+
+    @Override
+    public Object toObject() {
+        final HashMap object = new HashMap();
+
+        for(Map.Entry<CborObject, CborObject> entry : value.entrySet()) {
+            object.put(entry.getKey().toObject(), entry.getValue().toObject());
+        }
+
+        return object;
+    }
 }

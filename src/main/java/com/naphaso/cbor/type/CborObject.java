@@ -37,6 +37,10 @@ public abstract class CborObject {
         }
     }
 
+    public Object toObject() {
+        throw new CborException("unknown object conversion");
+    }
+
     public CborNumber getTag() {
         return tag;
     }
