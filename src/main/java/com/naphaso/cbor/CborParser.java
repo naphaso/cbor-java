@@ -18,18 +18,37 @@
 
 package com.naphaso.cbor;
 
+import com.naphaso.cbor.exception.CborException;
 import com.naphaso.cbor.io.Input;
 import com.naphaso.cbor.type.*;
+import com.naphaso.cbor.util.CborObjectListener;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Stack;
 
-public class CborParser implements CborListener {
+public class CborParser implements CborListener, CborObjectListener {
+    private CborObjectListener listener;
+    private CborObject parsedObject;
 
-    public void parse(Input input) throws IOException {
+    public void parse(Input input, CborObjectListener listener) throws IOException {
+        this.listener = listener;
         CborReader reader = new CborReader(input);
         reader.setListener(this);
         reader.run();
+    }
+
+    public CborObject parse(Input input) throws IOException {
+        this.listener = this;
+        CborReader reader = new CborReader(input);
+        reader.setListener(this);
+        reader.run();
+
+        if(parsedObject != null) {
+            return parsedObject;
+        } else {
+            throw new CborException("empty stream");
+        }
     }
 
     private CborNumber currentTag;
@@ -100,7 +119,7 @@ public class CborParser implements CborListener {
 
     private void onObject(CborObject object) {
         if(parseStateStack.empty()) {
-            onCompleteObject(object);
+            listener.onCborObject(object);
         } else {
             ParseState state = parseStateStack.peek();
             if(state.type == ParseType.MAP) {
@@ -115,7 +134,7 @@ public class CborParser implements CborListener {
                         parseStateStack.pop();
                         CborMap map = new CborMap(state.currentMap);
                         map.setTag(state.tag);
-                        onCompleteObject(map);
+                        listener.onCborObject(map);
                     }
                 }
             } else {
@@ -125,14 +144,15 @@ public class CborParser implements CborListener {
                     parseStateStack.pop();
                     CborArray array = new CborArray(state.currentArray);
                     array.setTag(state.tag);
-                    onCompleteObject(array);
+                    listener.onCborObject(array);
                 }
             }
         }
     }
 
-    private void onCompleteObject(CborObject object) {
-        System.out.println("complete object: " + object);
+    @Override
+    public void onCborObject(CborObject object) {
+        parsedObject = object;
     }
 
     private static enum ParseType {

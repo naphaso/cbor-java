@@ -3,9 +3,7 @@ package com.naphaso.cbor.serializers;
 import com.naphaso.cbor.type.*;
 import com.naphaso.cbor.type.number.CborInteger;
 import com.naphaso.cbor.type.number.CborShort;
-import com.sun.tools.javac.resources.compiler;
 
-import java.lang.reflect.Array;
 import java.lang.reflect.Type;
 import java.util.*;
 
