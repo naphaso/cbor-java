@@ -1,5 +1,7 @@
 # CBOR for Java
 
+[![Gitter](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/naphaso/cbor-java?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 The Concise Binary Object Representation (CBOR) is a data format
 whose design goals include the possibility of extremely small code
 size, fairly small message size, and extensibility without the need
